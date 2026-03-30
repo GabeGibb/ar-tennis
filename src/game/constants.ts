@@ -31,8 +31,21 @@ export const PHYSICS = {
 export const PLAYER = {
   eyeHeight: 1.7,
   moveSpeed: 5.0,        // m/s
-  hitReach: 2.5,         // meters — generous for mouse/keyboard
+  hitReach: 1.5,         // meters — realistic arm + racket length
 } as const;
 
-// Tennis scoring
-export const SCORE_NAMES = ['0', '15', '30', '40'] as const;
+// Practice wall
+export const WALL = {
+  width: COURT.singlesWidth,  // 8.23m — matches singles court width
+  height: 4.0,
+  depth: 0.3,
+  restitution: 0.85,
+} as const;
+
+// Play area bounds (half court)
+export const PLAY_AREA = {
+  minX: -COURT.singlesWidth / 2,  // -4.115
+  maxX: COURT.singlesWidth / 2,   //  4.115
+  minZ: 1.0,                      // just in front of wall
+  maxZ: COURT.halfLength,         // 11.885 — baseline distance
+} as const;

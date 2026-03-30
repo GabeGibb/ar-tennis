@@ -2,12 +2,14 @@ import { useRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import type { GameEngine } from '../game/engine.ts';
+import type { Vec3 } from '../game/types.ts';
 
 interface RacketProps {
   engine: GameEngine;
+  racketPosition?: Vec3 | null;
 }
 
-export function Racket({ engine }: RacketProps) {
+export function Racket({ engine, racketPosition }: RacketProps) {
   const groupRef = useRef<THREE.Group>(null);
   const { camera } = useThree();
 
@@ -35,32 +37,36 @@ export function Racket({ engine }: RacketProps) {
   }, []);
 
   const offset = useMemo(() => new THREE.Vector3(), []);
-  const swingOffset = useMemo(() => new THREE.Vector3(), []);
+  const swingOffsetVec = useMemo(() => new THREE.Vector3(), []);
 
   useFrame(() => {
     if (!groupRef.current) return;
 
-    // Base position: right side, slightly below, in front of camera
-    offset.set(0.35, -0.3, -0.6);
-    offset.applyQuaternion(camera.quaternion);
+    if (racketPosition) {
+      // AR mode: use tracked racket position directly
+      groupRef.current.position.set(racketPosition.x, racketPosition.y, racketPosition.z);
+      groupRef.current.quaternion.copy(camera.quaternion);
+    } else {
+      // Desktop mode: camera-relative offset
+      offset.set(0.35, -0.3, -0.6);
+      offset.applyQuaternion(camera.quaternion);
 
-    groupRef.current.position.copy(camera.position).add(offset);
-    groupRef.current.quaternion.copy(camera.quaternion);
+      groupRef.current.position.copy(camera.position).add(offset);
+      groupRef.current.quaternion.copy(camera.quaternion);
+    }
+
     groupRef.current.rotateX(-0.3); // tilt racket face up for natural hold
 
     // Swing animation
     const swingProgress = engine.swingProgress;
     if (swingProgress > 0) {
-      // t goes from 1 (start) to 0 (end)
       const t = swingProgress;
-      // Swing arc: fast forward rotation
       const swingAngle = Math.sin((1 - t) * Math.PI) * 1.8;
       groupRef.current.rotateX(-swingAngle);
 
-      // Push racket forward during swing
-      swingOffset.set(0, 0.1, -0.3 * Math.sin((1 - t) * Math.PI));
-      swingOffset.applyQuaternion(camera.quaternion);
-      groupRef.current.position.add(swingOffset);
+      swingOffsetVec.set(0, 0.1, -0.3 * Math.sin((1 - t) * Math.PI));
+      swingOffsetVec.applyQuaternion(camera.quaternion);
+      groupRef.current.position.add(swingOffsetVec);
     }
   });
 
@@ -78,9 +84,7 @@ export function Racket({ engine }: RacketProps) {
           <bufferGeometry>
             <bufferAttribute
               attach="attributes-position"
-              count={2}
-              array={new Float32Array([s.x, -s.maxY, 0, s.x, s.maxY, 0])}
-              itemSize={3}
+              args={[new Float32Array([s.x, -s.maxY, 0, s.x, s.maxY, 0]), 3]}
             />
           </bufferGeometry>
           <lineBasicMaterial color="#dddddd" transparent opacity={0.7} />
@@ -93,9 +97,7 @@ export function Racket({ engine }: RacketProps) {
           <bufferGeometry>
             <bufferAttribute
               attach="attributes-position"
-              count={2}
-              array={new Float32Array([-s.maxX, s.y, 0, s.maxX, s.y, 0])}
-              itemSize={3}
+              args={[new Float32Array([-s.maxX, s.y, 0, s.maxX, s.y, 0]), 3]}
             />
           </bufferGeometry>
           <lineBasicMaterial color="#dddddd" transparent opacity={0.7} />

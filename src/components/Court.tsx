@@ -1,5 +1,3 @@
-import { useMemo } from 'react';
-import * as THREE from 'three';
 import { COURT } from '../game/constants.ts';
 
 function CourtLine({ position, size }: { position: [number, number, number]; size: [number, number] }) {
@@ -11,8 +9,8 @@ function CourtLine({ position, size }: { position: [number, number, number]; siz
   );
 }
 
+/** Half-court lines for wall practice mode */
 export function Court() {
-  const hw = COURT.width / 2;
   const hsw = COURT.singlesWidth / 2;
   const hl = COURT.halfLength;
   const sd = COURT.serviceDepth;
@@ -21,42 +19,27 @@ export function Court() {
 
   return (
     <group>
-      {/* Green surround */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[COURT.width + 8, COURT.length + 12]} />
-        <meshStandardMaterial color="#2d5a27" roughness={0.8} />
-      </mesh>
-
-      {/* Blue hard court */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, 0]} receiveShadow>
-        <planeGeometry args={[COURT.width, COURT.length]} />
+      {/* Blue hard court surface (half court) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.001, hl / 2]} receiveShadow>
+        <planeGeometry args={[COURT.singlesWidth, hl]} />
         <meshStandardMaterial color="#1a6bc4" roughness={0.7} />
       </mesh>
 
-      {/* Court lines */}
-      {/* Baselines */}
-      <CourtLine position={[0, lh, hl]} size={[COURT.width, lt]} />
-      <CourtLine position={[0, lh, -hl]} size={[COURT.width, lt]} />
+      {/* Baseline (back of half court) */}
+      <CourtLine position={[0, lh, hl]} size={[COURT.singlesWidth, lt]} />
 
-      {/* Doubles sidelines */}
-      <CourtLine position={[hw, lh, 0]} size={[lt, COURT.length]} />
-      <CourtLine position={[-hw, lh, 0]} size={[lt, COURT.length]} />
+      {/* Singles sidelines (wall to baseline) */}
+      <CourtLine position={[hsw, lh, hl / 2]} size={[lt, hl]} />
+      <CourtLine position={[-hsw, lh, hl / 2]} size={[lt, hl]} />
 
-      {/* Singles sidelines */}
-      <CourtLine position={[hsw, lh, 0]} size={[lt, COURT.length]} />
-      <CourtLine position={[-hsw, lh, 0]} size={[lt, COURT.length]} />
-
-      {/* Service lines */}
+      {/* Service line */}
       <CourtLine position={[0, lh, sd]} size={[COURT.singlesWidth, lt]} />
-      <CourtLine position={[0, lh, -sd]} size={[COURT.singlesWidth, lt]} />
 
-      {/* Center service lines */}
+      {/* Center service line (wall to service line) */}
       <CourtLine position={[0, lh, sd / 2]} size={[lt, sd]} />
-      <CourtLine position={[0, lh, -sd / 2]} size={[lt, sd]} />
 
-      {/* Center marks */}
+      {/* Center mark on baseline */}
       <CourtLine position={[0, lh, hl - 0.1]} size={[lt, 0.2]} />
-      <CourtLine position={[0, lh, -hl + 0.1]} size={[lt, 0.2]} />
     </group>
   );
 }

@@ -1,26 +1,25 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { Scene } from './components/Scene.tsx';
 import { HUD } from './components/HUD.tsx';
 import { GameEngine } from './game/engine.ts';
-import { InputManager } from './game/input.ts';
+import { DesktopInputProvider } from './game/desktop-input.ts';
 import './App.css';
 
-// Create once at module level — no async, no WASM
 const engine = new GameEngine();
-const input = new InputManager();
+const inputProvider = new DesktopInputProvider();
 
 function App() {
   useEffect(() => {
     return () => {
-      input.dispose();
+      inputProvider.dispose();
       engine.dispose();
     };
   }, []);
 
   return (
     <div className="game-container">
-      <HUD engine={engine} />
-      <Scene engine={engine} input={input} />
+      <HUD engine={engine} showCrosshair={true} />
+      <Scene engine={engine} inputProvider={inputProvider} />
     </div>
   );
 }

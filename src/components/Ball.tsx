@@ -4,7 +4,7 @@ import { useFrame } from '@react-three/fiber';
 import { BALL } from '../game/constants.ts';
 import type { BallState } from '../game/types.ts';
 
-const VISUAL_SCALE = 4;
+const VISUAL_SCALE = 2;
 const VISUAL_RADIUS = BALL.radius * VISUAL_SCALE;
 
 function createBallTexture(): THREE.CanvasTexture {

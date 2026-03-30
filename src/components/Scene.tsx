@@ -3,33 +3,39 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Ground } from './Ground.tsx';
 import { Wall } from './Wall.tsx';
+import { Court } from './Court.tsx';
 import { Ball } from './Ball.tsx';
 import { Racket } from './Racket.tsx';
 import { GameEngine } from '../game/engine.ts';
-import { InputManager } from '../game/input.ts';
+import type { InputProvider, PlayerInput } from '../game/input-provider.ts';
 import { PHYSICS, PLAYER } from '../game/constants.ts';
 
 interface GameLoopProps {
   engine: GameEngine;
-  input: InputManager;
+  inputProvider: InputProvider;
 }
 
-function CameraController({ engine, input }: GameLoopProps) {
+function CameraController({ engine, inputProvider }: GameLoopProps) {
   const { camera } = useThree();
   const accumulator = useRef(0);
+  const latestInput = useRef<PlayerInput | null>(null);
 
   useFrame((_, delta) => {
     const cappedDelta = Math.min(delta, 0.05);
     accumulator.current += cappedDelta;
 
-    // Consume input ONCE per frame
-    const inputState = input.consume();
-
+    let firstStep = true;
     while (accumulator.current >= PHYSICS.fixedTimeStep) {
-      engine.step(inputState);
-      // Clear one-shot flags after first sub-step
-      inputState.swing = false;
-      inputState.serve = false;
+      inputProvider.update(PHYSICS.fixedTimeStep);
+      const input = inputProvider.getInput();
+      // Only use one-shot flags (swing/serve) on the first sub-step
+      if (!firstStep) {
+        input.swing = false;
+        input.serve = false;
+      }
+      engine.step(input);
+      latestInput.current = input;
+      firstStep = false;
       accumulator.current -= PHYSICS.fixedTimeStep;
     }
 
@@ -45,18 +51,18 @@ function CameraController({ engine, input }: GameLoopProps) {
 
 interface SceneProps {
   engine: GameEngine;
-  input: InputManager;
+  inputProvider: InputProvider;
 }
 
-export function Scene({ engine, input }: SceneProps) {
+export function Scene({ engine, inputProvider }: SceneProps) {
   const handleCanvasClick = useCallback(() => {
     const canvas = document.querySelector('canvas');
-    if (!document.pointerLockElement && canvas) {
-      input.requestPointerLock(canvas);
-    } else {
-      input.onClick();
+    if (inputProvider.requestPointerLock && !inputProvider.isLocked && canvas) {
+      inputProvider.requestPointerLock(canvas);
+    } else if (inputProvider.onClick) {
+      inputProvider.onClick();
     }
-  }, [input]);
+  }, [inputProvider]);
 
   return (
     <Canvas
@@ -92,11 +98,12 @@ export function Scene({ engine, input }: SceneProps) {
       />
 
       <Ground />
+      <Court />
       <Wall />
       <Ball ballState={engine.ballState} />
       <Racket engine={engine} />
 
-      <CameraController engine={engine} input={input} />
+      <CameraController engine={engine} inputProvider={inputProvider} />
     </Canvas>
   );
 }
